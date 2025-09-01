@@ -9,7 +9,7 @@ export async function GET() {
           select: { id: true, name: true, email: true }
         },
         channel: {
-          select: { id: true, name: string }
+          select: { id: true, name: true }
         },
         items: {
           include: {
