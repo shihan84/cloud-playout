@@ -3,11 +3,11 @@ import { db } from '@/lib/db'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { scheduleId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const scheduleItems = await db.scheduleItem.findMany({
-      where: { scheduleId: params.scheduleId },
+      where: { scheduleId: params.id },
       include: {
         mediaItem: {
           select: { 
@@ -41,7 +41,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { scheduleId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const body = await request.json()
@@ -61,7 +61,7 @@ export async function POST(
 
     // Verify schedule exists
     const schedule = await db.schedule.findUnique({
-      where: { id: params.scheduleId }
+      where: { id: params.id }
     })
 
     if (!schedule) {
@@ -85,7 +85,7 @@ export async function POST(
 
     // Get the current highest order for this schedule
     const lastItem = await db.scheduleItem.findFirst({
-      where: { scheduleId: params.scheduleId },
+      where: { scheduleId: params.id },
       orderBy: { order: 'desc' }
     })
 
@@ -96,7 +96,7 @@ export async function POST(
 
     const scheduleItem = await db.scheduleItem.create({
       data: {
-        scheduleId: params.scheduleId,
+        scheduleId: params.id,
         mediaItemId,
         duration: itemDuration,
         transition,
