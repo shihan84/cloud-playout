@@ -16,14 +16,30 @@ interface Channel {
   id: string
   name: string
   description?: string
-  status: "live" | "scheduled" | "offline"
-  viewers: string
-  resolution: string
-  framerate: number
   isActive: boolean
   streamUrl?: string
   outputUrl?: string
+  resolution: string
+  framerate: number
+  logoUrl?: string
   createdAt: string
+  updatedAt: string
+  userId: string
+  user?: {
+    id: string
+    name: string
+    email: string
+  }
+  schedules?: Array<{
+    id: string
+    name: string
+    isActive: boolean
+  }>
+  overlays?: Array<{
+    id: string
+    name: string
+    isActive: boolean
+  }>
   _count?: {
     schedules: number
     overlays: number
@@ -144,7 +160,11 @@ export function ChannelManagement() {
     })
   }
 
-  const filteredChannels = channels.filter(channel =>
+  const filteredChannels = channels.map(channel => ({
+    ...channel,
+    status: channel.isActive ? "live" : "offline",
+    viewers: "0" // Default viewers count - in real app this would come from analytics
+  })).filter(channel =>
     channel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     channel.description?.toLowerCase().includes(searchTerm.toLowerCase())
   )
