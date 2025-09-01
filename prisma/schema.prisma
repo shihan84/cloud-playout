@@ -17,16 +17,196 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   name      String?
+  role      UserRole @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  channels   Channel[]
+  mediaItems MediaItem[]
+  schedules  Schedule[]
+  overlays   Overlay[]
+  logs       SystemLog[]
+
+  @@map("users")
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Channel {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean     @default(true)
+  logoUrl     String?
+  streamUrl   String?
+  outputUrl   String?
+  resolution  String      @default("1920x1080")
+  framerate   Int         @default(30)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+
+  schedules   Schedule[]
+  playoutLogs PlayoutLog[]
+  overlays    Overlay[]
+
+  @@map("channels")
+}
+
+model MediaItem {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  filename    String
+  filePath    String
+  fileSize    Int
+  duration    Int         // in seconds
+  mimeType    String
+  thumbnail   String?
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+
+  scheduleItems ScheduleItem[]
+
+  @@map("media_items")
+}
+
+model Schedule {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean     @default(true)
+  isLoop      Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+
+  channelId   String
+  channel     Channel     @relation(fields: [channelId], references: [id])
+
+  items       ScheduleItem[]
+
+  @@map("schedules")
+}
+
+model ScheduleItem {
+  id          String   @id @default(cuid())
+  order       Int
+  startTime   DateTime?
+  duration    Int      // in seconds
+  transition  String   @default("cut") // cut, fade, wipe
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  scheduleId  String
+  schedule    Schedule @relation(fields: [scheduleId], references: [id])
+
+  mediaItemId String
+  mediaItem   MediaItem @relation(fields: [mediaItemId], references: [id])
+
+  overlays    OverlayItem[]
+
+  @@map("schedule_items")
+}
+
+model Overlay {
+  id          String        @id @default(cuid())
+  name        String
+  type        OverlayType
+  content     String        // JSON content for the overlay
+  position    String        @default("top-left") // top-left, top-right, bottom-left, bottom-right, center
+  size        String        @default("medium") // small, medium, large
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+
+  channelId   String?
+  channel     Channel?      @relation(fields: [channelId], references: [id])
+
+  items       OverlayItem[]
+
+  @@map("overlays")
+}
+
+model OverlayItem {
+  id          String   @id @default(cuid())
+  startTime   Int      // seconds from start of media item
+  duration    Int      // in seconds
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  overlayId   String
+  overlay     Overlay  @relation(fields: [overlayId], references: [id])
+
+  scheduleItemId String
+  scheduleItem   ScheduleItem @relation(fields: [scheduleItemId], references: [id])
+
+  @@map("overlay_items")
+}
+
+model PlayoutLog {
+  id          String        @id @default(cuid())
+  eventType   PlayoutEventType
+  description String
+  metadata    String?       // JSON metadata
+  timestamp   DateTime      @default(now())
+
+  channelId   String
+  channel     Channel       @relation(fields: [channelId], references: [id])
+
+  @@map("playout_logs")
+}
+
+model SystemLog {
+  id          String        @id @default(cuid())
+  level       LogLevel      @default(INFO)
+  message     String
+  metadata    String?       // JSON metadata
+  timestamp   DateTime      @default(now())
+
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id])
+
+  @@map("system_logs")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  OPERATOR
+}
+
+enum OverlayType {
+  TEXT
+  IMAGE
+  CLOCK
+  WEATHER
+  NEWS_TICKER
+  CUSTOM
+}
+
+enum PlayoutEventType {
+  PLAY_START
+  PLAY_END
+  ERROR
+  SCHEDULE_CHANGE
+  OVERLAY_TRIGGER
+  CHANNEL_START
+  CHANNEL_STOP
+}
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
 }
